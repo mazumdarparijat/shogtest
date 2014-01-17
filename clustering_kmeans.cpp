@@ -90,6 +90,7 @@ void minibatchKMeans(int32_t k, int32_t b, int32_t t, CDistance* d)
 			x.display_vector("x scaled");
 			c_alive=c_alive + x;
 			c_alive.display_vector("c final");
+			x.scale(1.0/eta);
 			rhs_mus->set_feature_vector(c_alive, near);
 		}
 	}
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
 
 	cout<<"done"<<endl;
 
-	minibatchKMeans(1,4,100,distance);
+	minibatchKMeans(2,3,100,distance);
 //	SG_UNREF(clustering);
 //	SG_UNREF(clusteringpp);
 	SG_UNREF(features);
