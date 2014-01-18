@@ -4,7 +4,12 @@
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * Written (W) 2013 Parijat Mazumdar
+ * This is an example of mini-batch KMeans compared with classical KMeans. 
+ * Refer: http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
+ * While the accuracy of mini-batch KMeans is lower than Lloyd's KMeans, 
+ * the former is much faster than the latter.
+ *
+ * Written (W) 2014 Parijat Mazumdar
  */
 
 #include <shogun/base/init.h>
@@ -13,112 +18,12 @@
 #include <shogun/clustering/KMeans.h>
 #include <shogun/distance/EuclideanDistance.h>
 #include <shogun/mathematics/Math.h>
-#include <iostream>
+
 using namespace shogun;
-using namespace std;
 
 void print_message(FILE* target, const char* str)
 {
 	fprintf(target, "%s", str);
-}
-
-SGVector<int32_t> choose_rand(int32_t b, int32_t num);
-
-void minibatchKMeans(int32_t k, int32_t b, int32_t t, CDistance* d)
-{
-	CDenseFeatures<float64_t>* lhs=(CDenseFeatures<float64_t>*) d->get_lhs();
-	int32_t XSize=lhs->get_num_vectors();
-	cout<<"XSize : "<<XSize<<endl;
-	int32_t dims=lhs->get_num_features();
-	cout<<"dims : "<<dims<<endl;
-	SGMatrix<float64_t> C=SGMatrix<float64_t>(dims,k);
-	SGVector<float64_t> v=SGVector<float64_t>(k);
-	v.zero();
-
-	SGVector<int32_t> crand=choose_rand(k,XSize);
-	crand.display_vector("crand");
-	for (int32_t i=0; i<k; i++)
-	{
-		SGVector<float64_t> feature=lhs->get_feature_vector(crand[i]);
-		for (int32_t j=0; j<dims; j++)
-			C(j,i)=feature[j];
-	}
-
-	CDenseFeatures<float64_t>* rhs_mus = new CDenseFeatures<float64_t>(0);
-	CFeatures* rhs_cache = d->replace_rhs(rhs_mus);
-	rhs_mus->set_feature_matrix(C);
-	for (int32_t i=0; i<t; i++)
-	{
-	        SGMatrix<float64_t>::display_matrix(C.matrix,dims,k,"fast kmeans");	
-		cout<<"i : "<<i<<endl;
-		SGVector<int32_t> M=choose_rand(b,XSize);
-		M.display_vector("M");
-		SGVector<int32_t> ncent= SGVector<int32_t>(b);
-		for (int32_t j=0; j<b; j++)
-		{
-			
-			SGVector<float64_t> dists=SGVector<float64_t>(k);
-			for (int32_t p=0; p<k; p++)
-				dists[p]=d->distance(M[j],p);
-
-			int32_t imin=0;
-			float64_t min=dists[0];
-			for (int32_t p=1; p<k; p++)
-			{
-				if (dists[p]<min)
-				{
-					imin=p;
-					min=dists[p];
-				}
-			}
-			ncent[j]=imin;
-		}
-		ncent.display_vector("ncent");
-		for (int32_t j=0; j<b; j++)
-		{
-			int32_t near=ncent[j];
-			SGVector<float64_t> c_alive=rhs_mus->get_feature_vector(near);
-			c_alive.display_vector("c");
-			SGVector<float64_t> x=lhs->get_feature_vector(M[j]);
-			x.display_vector("x");
-			v[near]+=1.0;
-			float64_t eta=1.0/v[near];
-			cout<<"eta : "<<eta<<endl;
-			for (int32_t c=0; c<dims; c++)
-			{
-				c_alive[c]= (1.0-eta)*c_alive[c]+eta*x[c];
-			}
-//			c_alive.scale((1-eta));
-//			c_alive.display_vector("c scaled");
-//			x.scale(eta);
-//			x.display_vector("x scaled");
-//			c_alive=c_alive + x;
-			c_alive.display_vector("c final");
-//			x.scale(1.0/eta);
-//			rhs_mus->set_feature_vector(c_alive, near);
-		}
-	}
-	SGMatrix<float64_t>::display_matrix(C.matrix,dims,k,"fast kmeans");
-}
-
-SGVector<int32_t> choose_rand(int32_t b, int32_t num)
-{
-	SGVector<int32_t> chosen=SGVector<int32_t>(num);
-	SGVector<int32_t> ret=SGVector<int32_t>(b);
-	chosen.zero();
-	int32_t ch=0;
-	while (ch<b)
-	{
-		const int32_t n=CMath::random(0,num-1);
-		cout<<"SEE : "<<n<<endl;
-		if (chosen[n]==0)
-		{
-			chosen[n]+=1;
-			ret[ch]=n;
-			ch++;
-		}
-	}
-	return ret;
 }
 
 int main(int argc, char **argv)
@@ -146,29 +51,39 @@ int main(int argc, char **argv)
 	SG_REF(features);
 
 	CEuclideanDistance* distance = new CEuclideanDistance(features, features);
-//	CKMeans* clustering=new CKMeans(2, distance);
-
-
-//	clustering->train(features);
-
-//	CMulticlassLabels* result=CLabelsFactory::to_multiclass(clustering->apply());
+	CKMeans* clustering=new CKMeans(2, distance, true);
 	
-//		for (index_t i=0; i<result->get_num_labels(); ++i)
-//			SG_SPRINT("cluster index of vector %i: %f\n", i, result->get_label(i));
+	clustering->train(features);
+	CMulticlassLabels* result=CLabelsFactory::to_multiclass(clustering->apply());
+	
+		for (index_t i=0; i<result->get_num_labels(); ++i)
+			SG_SPRINT("cluster index of vector %i: %f\n", i, result->get_label(i));
 
-//	CDenseFeatures<float64_t>* centers=(CDenseFeatures<float64_t>*)distance->get_lhs();
-//	SGMatrix<float64_t> centers_matrix=centers->get_feature_matrix();
-//	SGMatrix<float64_t>::display_matrix(centers_matrix.matrix, centers_matrix.num_rows, centers_matrix.num_cols, "learnt centers");
+	CDenseFeatures<float64_t>* centers=(CDenseFeatures<float64_t>*)distance->get_lhs();
+	SGMatrix<float64_t> centers_matrix=centers->get_feature_matrix();
+	SGMatrix<float64_t>::display_matrix(centers_matrix.matrix, 
+			centers_matrix.num_rows, centers_matrix.num_cols, "learnt centers using Lloyd's KMeans");
+
+
+	clustering->set_use_fast(1);
+	clustering->set_mbKMeans_params(2,5);
+	clustering->train(features);
+	result=CLabelsFactory::to_multiclass(clustering->apply());
+	
+		for (index_t i=0; i<result->get_num_labels(); ++i)
+			SG_SPRINT("cluster index of vector %i: %f\n", i, result->get_label(i));
+
+	centers=(CDenseFeatures<float64_t>*)distance->get_lhs();
+	centers_matrix=centers->get_feature_matrix();
+	SGMatrix<float64_t>::display_matrix(centers_matrix.matrix, 
+			centers_matrix.num_rows, centers_matrix.num_cols, "learnt centers using mini-batch KMeans");
+
+	
 	
 
-//	SG_UNREF(centers);
-//	SG_UNREF(result);
-
-	cout<<"done"<<endl;
-
-	minibatchKMeans(2,2,100,distance);
-//	SG_UNREF(clustering);
-//	SG_UNREF(clusteringpp);
+	SG_UNREF(centers);
+	SG_UNREF(result);
+	SG_UNREF(clustering);
 	SG_UNREF(features);
 
 	exit_shogun();
