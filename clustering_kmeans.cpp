@@ -84,14 +84,18 @@ void minibatchKMeans(int32_t k, int32_t b, int32_t t, CDistance* d)
 			v[near]+=1.0;
 			float64_t eta=1.0/v[near];
 			cout<<"eta : "<<eta<<endl;
-			c_alive.scale((1-eta));
-			c_alive.display_vector("c scaled");
-			x.scale(eta);
-			x.display_vector("x scaled");
-			c_alive=c_alive + x;
+			for (int32_t c=0; c<dims; c++)
+			{
+				c_alive[c]= (1.0-eta)*c_alive[c]+eta*x[c];
+			}
+//			c_alive.scale((1-eta));
+//			c_alive.display_vector("c scaled");
+//			x.scale(eta);
+//			x.display_vector("x scaled");
+//			c_alive=c_alive + x;
 			c_alive.display_vector("c final");
-			x.scale(1.0/eta);
-			rhs_mus->set_feature_vector(c_alive, near);
+//			x.scale(1.0/eta);
+//			rhs_mus->set_feature_vector(c_alive, near);
 		}
 	}
 	SGMatrix<float64_t>::display_matrix(C.matrix,dims,k,"fast kmeans");
@@ -162,7 +166,7 @@ int main(int argc, char **argv)
 
 	cout<<"done"<<endl;
 
-	minibatchKMeans(2,3,100,distance);
+	minibatchKMeans(2,2,100,distance);
 //	SG_UNREF(clustering);
 //	SG_UNREF(clusteringpp);
 	SG_UNREF(features);
