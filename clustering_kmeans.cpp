@@ -46,7 +46,6 @@ int main(int argc, char **argv)
 			4, "rectangle_coordinates");
 
 
-
 	CDenseFeatures<float64_t>* features= new CDenseFeatures<float64_t> (data);
 	SG_REF(features);
 
@@ -65,8 +64,8 @@ int main(int argc, char **argv)
 			centers_matrix.num_rows, centers_matrix.num_cols, "learnt centers using Lloyd's KMeans");
 
 
-	clustering->set_use_fast(1);
-	clustering->set_mbKMeans_params(2,5);
+	clustering->set_train_method(shogun::minibatch);
+	clustering->set_mbKMeans_params(2,10);
 	clustering->train(features);
 	result=CLabelsFactory::to_multiclass(clustering->apply());
 	
