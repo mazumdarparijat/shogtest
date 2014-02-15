@@ -1,4 +1,4 @@
-from numpy import array
+from numpy import array, concatenate, ones, zeros, nonzero, where
 import matplotlib.pyplot as pyplot
 from modshogun import *
 f = open('iris.data')
@@ -51,7 +51,26 @@ kmeans.train(train_features)
 # labels for data points
 result = kmeans.apply()
 
+labels = concatenate((zeros(50),ones(50),2.*ones(50)),1)
+ground_truth = MulticlassLabels(array(labels,dtype='float64'))
 
+AccuracyEval = ClusteringAccuracy()
+AccuracyEval.best_map(result, ground_truth)
+
+compare = result.get_labels()-labels
+diff = nonzero(compare)
+
+figure,axis = pyplot.subplots(1,1)
+axis.plot(obsmatrix[2,:],obsmatrix[3,:],'x',color='black', markersize=5)
+axis.plot(obsmatrix[2,diff],obsmatrix[3,diff],'ko',color='r', markersize=7)
+axis.set_xlim(-1,8)
+axis.set_ylim(-1,3)
+axis.set_title('Difference')
+pyplot.show()
+
+print AccuracyEval.evaluate(result, ground_truth)
+
+		
 
 # plot the clusters over the original points in 2 dimensions
 figure,axis = pyplot.subplots(1,1)
