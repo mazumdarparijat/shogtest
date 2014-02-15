@@ -13,21 +13,27 @@ f.close()
 # create observation matrix
 obsmatrix = array(features).T
 
-# plot the data
-figure,axis = pyplot.subplots(1,1)
-# First 50 data belong to Iris Sentosa, plotted in green
-axis.plot(obsmatrix[2,0:49], obsmatrix[3,0:49], 'o', color='green', markersize=5)
-# Next 50 data belong to Iris Versicolour, plotted in red
-axis.plot(obsmatrix[2,50:99], obsmatrix[3,50:99], 'o', color='red', markersize=5)
-# Last 50 data belong to Iris Virginica, plotted in blue
-axis.plot(obsmatrix[2,100:149], obsmatrix[3,100:149], 'o', color='blue', markersize=5)
-axis.set_xlim(-1,8)
-axis.set_ylim(-1,3)
-axis.set_title('3 varieties of Iris plants')
-pyplot.show()
-
 # wrap to Shogun features
 train_features = RealFeatures(obsmatrix)
+
+preprocessor = PCA()
+preprocessor.set_target_dim(2)
+print preprocessor.get_target_dim()
+preprocessor.init(train_features)
+mat = preprocessor.apply_to_feature_matrix(train_features)
+print mat
+
+
+
+
+
+
+
+
+
+
+
+
 
 # number of cluster centers = 3
 k = 3
@@ -40,11 +46,6 @@ kmeans = KMeans(k, distance)
 
 # use kmeans++ to initialize centers [play around: change it to False and compare results]
 kmeans.set_use_kmeanspp(True)
-
-# training method is Lloyd by default [play around: change it to mini-batch by uncommenting the following lines]
-#kmeans.set_train_method(KMM_MINI_BATCH)
-#kmeans.set_mbKMeans_params(20,30)
-
 # training kmeans
 kmeans.train(train_features)
 
