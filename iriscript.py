@@ -1,4 +1,4 @@
-from numpy import array, concatenate, ones, zeros, nonzero, where
+from numpy import array, concatenate, ones, zeros, nonzero, dot
 import matplotlib.pyplot as pyplot
 from modshogun import *
 f = open('iris.data')
@@ -16,12 +16,18 @@ obsmatrix = array(features).T
 # wrap to Shogun features
 train_features = RealFeatures(obsmatrix)
 
+train_features_clone = train_features
+submean = PruneVarSubMean(False)
+submean.init(train_features_clone)
+submean.apply_to_feature_matrix(train_features_clone)
 preprocessor = PCA()
 preprocessor.set_target_dim(2)
 print preprocessor.get_target_dim()
-preprocessor.init(train_features)
-mat = preprocessor.apply_to_feature_matrix(train_features)
-print mat
+preprocessor.init(train_features_clone)
+pca_transform = preprocessor.get_transformation_matrix()
+print pca_transform
+new_features = dot(pca_transform.T, train_features)
+print new_features
 
 
 
